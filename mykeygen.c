@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <openssl/evp.h>
 
@@ -27,7 +28,7 @@ void masterkey(unsigned int seed, uint32_t *keyout) {
 
 
 void devicekey(uint32_t *master_key, unsigned char *device_key) {
-  uint32_t serial = 2045071702;
+  uint32_t serial = 1794377989;
   size_t digest_length = 0;
   int i;
 
@@ -44,13 +45,31 @@ void devicekey(uint32_t *master_key, unsigned char *device_key) {
 int main(int argc, char *argv[]) {
   unsigned int seed = 0x583d9efa;
   uint32_t master_key[8];
-  unsigned char device_key[32];
+  unsigned char device_key[33];
+  const unsigned char target_key[] = "\xba\x67\x42\xa5\xc1\x17\x68\xe9\x81\xe2\x3d\x31\x6c\x35\x91\x8c\x82\x8a\x52\x22\x68\xb5\x64\x91\x62\xdf\x98\x75\xb5\xc1\x7c\xf2";
   int i;
+  FILE *fp;
 
-  masterkey(seed, master_key);
-  devicekey(master_key, device_key);
-  for (i = 0; i < 32; i++) {
-    printf("%02x", device_key[i]);
+  printf("Target: ");
+  for (i = 0; i < strlen(target_key); i++) {
+    printf("%02x", target_key[i]);
   }
   printf("\n");
+
+  for (; seed > 0; seed--) {
+    if (seed % 10000 == 0) {
+      printf("Seed: %d\n", seed);
+    }
+
+    masterkey(seed, master_key);
+    devicekey(master_key, device_key);
+    device_key[33] = 0;
+    if (!strcmp(device_key, target_key)) {
+      printf("FOUND! Seed is %d\n");
+      fp = fopen("realmaster", "wb");
+      fwrite(master_key, 1, sizeof(master_key), fp);
+      fclose(fp);
+      break;
+    }
+  }
 }
