@@ -56,6 +56,25 @@ int main(int argc, char *argv[]) {
 
   EVP_MD_CTX *ctx = EVP_MD_CTX_create();
 
+  /*
+  masterkey(seed, master_key, ctx);
+  for (i = 0; i < 8; i++) {
+    printf("%08x", master_key[i]);
+  }
+  printf("\n");
+  devicekey(master_key, device_key, ctx);
+  for (i = 0; i < 32; i++) {
+    printf("%02x", device_key[i]);
+  }
+  printf("\n");
+
+  device_key[32] = 0;
+
+  printf("strcmp: %d\n", strcmp(device_key, target_key));
+  printf("strlen(device_key)=%d strlen(target_key)=%d\n",
+      strlen(device_key), strlen(target_key));
+  */
+
   for (; seed > 0; seed--) {
     if (seed % 10000 == 0) {
       printf("Seed: %d\n", seed);
@@ -63,9 +82,9 @@ int main(int argc, char *argv[]) {
 
     masterkey(seed, master_key, ctx);
     devicekey(master_key, device_key, ctx);
-    device_key[33] = 0;
+    device_key[32] = 0;
     if (!strcmp(device_key, target_key)) {
-      printf("FOUND! Seed is %d\n");
+      printf("FOUND! Seed is %d\n", seed);
       fp = fopen("realmaster", "wb");
       fwrite(master_key, 1, sizeof(master_key), fp);
       fclose(fp);
