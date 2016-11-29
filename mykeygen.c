@@ -7,7 +7,7 @@
 
 #include <openssl/evp.h>
 
-void masterkey(unsigned int seed, uint32_t *keyout) {
+void masterkey(unsigned int seed, uint32_t *keyout, EVP_MD_CTX *ctx) {
   unsigned int digest_length;
   int i;
   int rep;
@@ -17,22 +17,19 @@ void masterkey(unsigned int seed, uint32_t *keyout) {
     keyout[i] = rand();
   }
 
-  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
   for (rep = 0x400; rep--; ) {
     EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(ctx, (void *)keyout, 8*sizeof(*keyout));
     EVP_DigestFinal_ex(ctx, (unsigned char *)keyout, &digest_length);
   }
-  EVP_MD_CTX_destroy(ctx);
 }
 
 
-void devicekey(uint32_t *master_key, unsigned char *device_key) {
+void devicekey(uint32_t *master_key, unsigned char *device_key, EVP_MD_CTX *ctx) {
   uint32_t serial = 1794377989;
   size_t digest_length = 0;
   int i;
 
-  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
   const EVP_MD *sha256 = EVP_sha256();
   EVP_PKEY *mac_key = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
       (unsigned char *)master_key, 8*sizeof(*master_key));
@@ -40,6 +37,7 @@ void devicekey(uint32_t *master_key, unsigned char *device_key) {
 
   EVP_DigestSignUpdate(ctx, &serial, sizeof(serial));
   EVP_DigestSignFinal(ctx, device_key, &digest_length);
+  EVP_PKEY_free(mac_key);
 }
 
 int main(int argc, char *argv[]) {
@@ -56,13 +54,15 @@ int main(int argc, char *argv[]) {
   }
   printf("\n");
 
+  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
+
   for (; seed > 0; seed--) {
     if (seed % 10000 == 0) {
       printf("Seed: %d\n", seed);
     }
 
-    masterkey(seed, master_key);
-    devicekey(master_key, device_key);
+    masterkey(seed, master_key, ctx);
+    devicekey(master_key, device_key, ctx);
     device_key[33] = 0;
     if (!strcmp(device_key, target_key)) {
       printf("FOUND! Seed is %d\n");
@@ -72,4 +72,6 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+
+  EVP_MD_CTX_destroy(ctx);
 }
