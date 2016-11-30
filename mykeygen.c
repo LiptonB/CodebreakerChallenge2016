@@ -43,7 +43,7 @@ void devicekey(uint32_t *master_key, unsigned char *device_key) {
 }
 
 int main(int argc, char *argv[]) {
-  unsigned int seed = 0x583d9efa;
+  unsigned int seed = 1473011467;
   uint32_t master_key[8];
   unsigned char device_key[33];
   const unsigned char target_key[] = "\xba\x67\x42\xa5\xc1\x17\x68\xe9\x81\xe2\x3d\x31\x6c\x35\x91\x8c\x82\x8a\x52\x22\x68\xb5\x64\x91\x62\xdf\x98\x75\xb5\xc1\x7c\xf2";
