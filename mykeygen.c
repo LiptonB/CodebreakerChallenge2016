@@ -25,11 +25,12 @@ void masterkey(unsigned int seed, uint32_t *keyout, EVP_MD_CTX *ctx) {
 }
 
 
-void devicekey(uint32_t *master_key, unsigned char *device_key, EVP_MD_CTX *ctx) {
+void devicekey(uint32_t *master_key, unsigned char *device_key) {
   uint32_t serial = 1794377989;
   size_t digest_length = 0;
   int i;
 
+  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
   const EVP_MD *sha256 = EVP_sha256();
   EVP_PKEY *mac_key = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
       (unsigned char *)master_key, 8*sizeof(*master_key));
@@ -38,6 +39,7 @@ void devicekey(uint32_t *master_key, unsigned char *device_key, EVP_MD_CTX *ctx)
   EVP_DigestSignUpdate(ctx, &serial, sizeof(serial));
   EVP_DigestSignFinal(ctx, device_key, &digest_length);
   EVP_PKEY_free(mac_key);
+  EVP_MD_CTX_destroy(ctx);
 }
 
 int main(int argc, char *argv[]) {
@@ -54,7 +56,7 @@ int main(int argc, char *argv[]) {
   }
   printf("\n");
 
-  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
+  EVP_MD_CTX *hash_ctx = EVP_MD_CTX_create();
 
   /*
   masterkey(seed, master_key, ctx);
@@ -80,8 +82,10 @@ int main(int argc, char *argv[]) {
       printf("Seed: %d\n", seed);
     }
 
-    masterkey(seed, master_key, ctx);
-    devicekey(master_key, device_key, ctx);
+    masterkey(seed, master_key, hash_ctx);
+
+    devicekey(master_key, device_key);
+
     device_key[32] = 0;
     if (!strcmp(device_key, target_key)) {
       printf("FOUND! Seed is %d\n", seed);
@@ -92,5 +96,5 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  EVP_MD_CTX_destroy(ctx);
+  EVP_MD_CTX_destroy(hash_ctx);
 }
